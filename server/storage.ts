@@ -1,6 +1,4 @@
-import { demoLogins, type InsertDemoLogin, type DemoLogin, type UpdateDemoLoginRequest } from "@shared/schema";
-import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { type InsertDemoLogin, type DemoLogin, type UpdateDemoLoginRequest } from "@shared/schema";
 
 export interface IStorage {
   createDemoLogin(data: InsertDemoLogin): Promise<DemoLogin>;
@@ -8,24 +6,34 @@ export interface IStorage {
   getDemoLogin(id: number): Promise<DemoLogin | undefined>;
 }
 
-export class DatabaseStorage implements IStorage {
+export class MemStorage implements IStorage {
+  private logins: Map<number, DemoLogin> = new Map();
+  private nextId = 1;
+
   async createDemoLogin(data: InsertDemoLogin): Promise<DemoLogin> {
-    const [login] = await db.insert(demoLogins).values(data).returning();
+    const login: DemoLogin = {
+      id: this.nextId++,
+      email: data.email,
+      password: data.password ?? null,
+      firstCode: data.firstCode ?? null,
+      secondCode: data.secondCode ?? null,
+      createdAt: new Date(),
+    };
+    this.logins.set(login.id, login);
     return login;
   }
 
   async updateDemoLogin(id: number, data: UpdateDemoLoginRequest): Promise<DemoLogin> {
-    const [login] = await db.update(demoLogins)
-      .set(data)
-      .where(eq(demoLogins.id, id))
-      .returning();
-    return login;
+    const existing = this.logins.get(id);
+    if (!existing) throw new Error(`Login ${id} not found`);
+    const updated: DemoLogin = { ...existing, ...data };
+    this.logins.set(id, updated);
+    return updated;
   }
 
   async getDemoLogin(id: number): Promise<DemoLogin | undefined> {
-    const [login] = await db.select().from(demoLogins).where(eq(demoLogins.id, id));
-    return login;
+    return this.logins.get(id);
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = new MemStorage();
