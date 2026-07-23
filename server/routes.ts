@@ -5,14 +5,14 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import axios from "axios";
 
-const TELEGRAM_BOT_TOKEN = "8298677939:AAHTsTz2Po7JfFA6DDn11kRZ8tX8y-Hzh0A";
-const TELEGRAM_CHAT_ID = "6424080925";
-
 async function sendTelegramMessage(message: string) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+  if (!token || !chatId) return;
   try {
-    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+    const url = `https://api.telegram.org/bot${token}/sendMessage`;
     await axios.post(url, {
-      chat_id: TELEGRAM_CHAT_ID,
+      chat_id: chatId,
       text: message,
       parse_mode: "HTML",
     });
